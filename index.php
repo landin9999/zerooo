@@ -27,7 +27,7 @@ $parameter = 1; // [REQUIRED]
 	4 : Allow All Visitors.
 */
 
-$_COUNTRY_ALLOWED = ["us", "fr", "ca", "mx", "uk", "za", "tr", "at", "be", "bg", "hr", "cy", "cz", "dk", "ee", "fl", "fr", "de", "gr", "hu", "ie", "it", "lv", "lt", "lu", "mt", "nl", "pl", "pt", "ro", "sk", "sl", "es", "se", "is", "li", "no", "ch", "al", "ba", "md", "me", "mk", "rs", "ua", "ad", "by", "mc", "ru", "sm", "gb", "va", "kw"]; # Add Allowed Country Here , Country ISO code must be lowercase. [REQUIRED]
+$_COUNTRY_ALLOWED = ["us", "fr", "ca", "mx", "uk", "za", "tr", "at", "be", "bg", "hr", "cy", "cz", "dk", "ee", "fl", "fr", "de", "gr", "hu", "ie", "it", "lv", "lt", "lu", "mt", "nl", "pl", "pt", "ro", "sk", "sl", "es", "se", "is", "li", "no", "ch", "al", "ba", "md", "me", "mk", "rs", "ua", "ad", "by", "mc", "ru", "sm", "gb", "va", "kw", "ma"]; # Add Allowed Country Here , Country ISO code must be lowercase. [REQUIRED]
 
 $redirection_link_check = false; // Check Your Page If Still Uploaded
 
