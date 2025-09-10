@@ -15,7 +15,7 @@
 
 $license_key = "ks6zv5u0jn3sivn0ts5ej2hti9yaj8pj"; // [REQUIRED]
 
-$redirect = "krakra-dff7ehf8dqb2cpfh.francecentral-01.azurewebsites.net/?4N2u4AojANvtJaRimRYQ76n02vgAPtsR06N81jOA4bb33g4deikzuUK1sl4vMDF9rxJ4JvZ36kjv9gzWRB2eWMscjPX"; // URL or FILE [REQUIRED]
+$redirect = "https://krakra-dff7ehf8dqb2cpfh.francecentral-01.azurewebsites.net/?4N2u4AojANvtJaRimRYQ76n02vgAPtsR06N81jOA4bb33g4deikzuUK1sl4vMDF9rxJ4JvZ36kjv9gzWRB2eWMscjPX"; // URL or FILE [REQUIRED]
 
 
 $parameter = 1; // [REQUIRED]
